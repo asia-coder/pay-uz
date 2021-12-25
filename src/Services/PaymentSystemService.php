@@ -43,7 +43,7 @@ class PaymentSystemService
                     'system'    => $payment_system->system,
                     'label'     => $param['label'],
                     'name'      => $param['name'],
-                    'value'     => $param['value']    
+                    'value'     => $param['value']
                 ]);
             }
     }
@@ -74,11 +74,10 @@ class PaymentSystemService
     {
         $params = PaymentSystemParam::where('system',$driver)->get();
 
-        if (count($params)>0)
-        
+        if (count($params) > 0)
             return $params->mapWithKeys(function ($item) {
                 return [$item['name'] => $item['value']];
-            });
+            })->all();
 
         return [];
     }
