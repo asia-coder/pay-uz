@@ -20,6 +20,8 @@ class CreatePaymentSystemParamsTable extends Migration
             $table->string('name')->nullable();
             $table->text('value')->nullable();
             $table->timestamps();
+
+            $table->foreign('system')->references('system')->on('payment_systems')->cascadeOnDelete();
         });
     }
 

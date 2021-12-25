@@ -27,6 +27,11 @@ class CreateTransactionsTable extends Migration
             $table->integer('transactionable_id')->nullable();
             $table->softDeletes();
             $table->timestamps();
+
+            $table->index('system_transaction_id');
+            $table->index('state');
+            $table->index(['state', 'created_at']);
+            $table->index(['transactionable_type', 'transactionable_id']);
         });
     }
 

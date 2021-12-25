@@ -16,23 +16,32 @@ class PayUz
 
     protected $driverClass = null;
 
+    protected $rewriteConfig = [];
+
     /**
      * PayUz constructor.
      */
     public function __construct()
     {
+
     }
 
+    public function rewriteConfig(array $config): PayUz
+    {
+        $this->rewriteConfig = $config;
+
+        return $this;
+    }
 
     /**
      * Select payment driver
      * @param null $driver
      * @return $this
      */
-    public function driver($driver = null){
-        switch ($driver){
+    public function driver($driver = null) {
+        switch ($driver) {
             case PaymentSystem::PAYME:
-                $this->driverClass = new Payme;
+                $this->driverClass = new Payme($this->rewriteConfig);
                 break;
             case PaymentSystem::CLICK:
                 $this->driverClass = new Click;

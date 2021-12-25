@@ -20,9 +20,12 @@ class Payme extends BaseGateway {
     /**
      * Payme constructor.
      */
-    public function __construct()
+    public function __construct(array $mergeConfig = [])
     {
-        $this->config   = PaymentSystemService::getPaymentSystemParamsCollect(PaymentSystem::PAYME);
+        $this->config = array_merge(
+            PaymentSystemService::getPaymentSystemParamsCollect(PaymentSystem::PAYME),
+            $mergeConfig
+        );
     }
 
     public function run()
@@ -65,7 +68,7 @@ class Payme extends BaseGateway {
                 );
         }
     }
-    
+
     private function CheckPerformTransaction()
     {
         $this->validateParams($this->request->params);
@@ -94,7 +97,7 @@ class Payme extends BaseGateway {
             );
         }
         PaymentService::payListener($model,null,'before-pay');
-        
+
         $this->response->success(['allow' => true]);
     }
     private function CheckTransaction()
@@ -199,9 +202,9 @@ class Payme extends BaseGateway {
                 'transactionable_id'    => $model->id
             ]);
         }
-         
+
         PaymentService::payListener($model,$transaction,'paying');
-        
+
         $this->response->success([
             'create_time' => 1*$transaction->updated_time,
             'transaction' => (string)$transaction->id,
@@ -253,13 +256,13 @@ class Payme extends BaseGateway {
 
             case Transaction::STATE_COMPLETED: // handle complete transaction
                 $detail = json_decode($transaction->detail,true);
-                
+
                 $this->response->success([
                     'transaction'  => (string)$transaction->id,
                     'perform_time' => 1*$detail['perform_time'],
                     'state'        => 1*$transaction->state,
                 ]);
-            
+
                 break;
 
             default:
@@ -296,12 +299,12 @@ class Payme extends BaseGateway {
             case Transaction::STATE_CREATED:
                 // cancel transaction with given reason
                 $transaction->cancel(1 * $this->request->params['reason']);
-                
+
                 $cancel_time               = DataFormat::timestamp(true);
-                
+
                 $detail = json_decode($transaction->detail,true);
                 $detail['cancel_time']   =   $cancel_time;
-                
+
                 $transaction->update([
                     'updated_time'=> $cancel_time,
                     'detail' => json_encode($detail)]);
@@ -342,7 +345,7 @@ class Payme extends BaseGateway {
     public function findTransactionByParams($params)
     {
         $transaction = Transaction::where('payment_system', PaymentSystem::PAYME)->where('system_transaction_id', $params['id'])->first();
-        return $transaction;  
+        return $transaction;
     }
     public function getModelTransactions($model, $active = false)
     {
@@ -351,7 +354,7 @@ class Payme extends BaseGateway {
         ->where('transactionable_id',$model->id);
         if ($active)
             $transactions = $transactions->where('state', Transaction::STATE_CREATED);
-        return $transactions->get();  
+        return $transactions->get();
     }
 
     /**
@@ -429,7 +432,7 @@ class Payme extends BaseGateway {
                 'time'         => 1 * $detail['system_time_datetime'], // paycom transaction timestamp as is
                 'amount'       => 1 * $row['amount'],
                 'account'      => [
-                    'key' => 1 * $row[$this->config['key']], // account parameters to identify client/order/service
+                    "{$this->config['key']}" => 1 * $row[$this->config['key']], // account parameters to identify client/order/service
                     // ... additional parameters may be listed here, which are belongs to the account
                 ],
                 'create_time'  => DataFormat::datetime2timestamp($detail['create_time']),
@@ -448,7 +451,7 @@ class Payme extends BaseGateway {
         return [
             'merchant' => $this->config['merchant_id'],
             'amount' => $amount*100,
-            'account[key]' => PaymentService::convertModelToKey($model),
+            'account[' . $this->config['key'] . ']' => PaymentService::convertModelToKey($model),
             'lang' => 'ru',
             'currency' => $currency,
             'callback' => $url,
