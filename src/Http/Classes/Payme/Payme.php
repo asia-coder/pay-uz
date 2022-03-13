@@ -1,6 +1,7 @@
 <?php
 namespace Goodoneuz\PayUz\Http\Classes\Payme;
 
+use Express24\PaymeUz\Config;
 use Goodoneuz\PayUz\Models\Transaction;
 use Goodoneuz\PayUz\Models\PaymentSystem;
 use Goodoneuz\PayUz\Services\PaymentService;
@@ -146,6 +147,21 @@ class Payme extends BaseGateway {
         $model = PaymentService::convertKeyToModel($this->request->params['account'][$this->config['key']]);
         //todo alert if model is null
         $transaction = $this->findTransactionByParams($this->request->params);
+
+        $receivers = null;
+
+        if (!empty($this->config['receivers'])) {
+            $receivers = array_map(function($item) use ($model) {
+                return [
+                    "id" => $item['cashbox_id'],
+                    "amount" => $item['amount'],
+                    "account" => [
+                        "{$this->config['key']}" => $model->id,
+                    ]
+                ];
+            }, $this->config['receivers']);
+        }
+
         if ($transaction) {
             if ($transaction->state != Transaction::STATE_CREATED) {
                 $this->response->error(
@@ -209,7 +225,7 @@ class Payme extends BaseGateway {
             'create_time' => 1*$transaction->updated_time,
             'transaction' => (string)$transaction->id,
             'state'       => 1*$transaction->state,
-            'receivers'   => $transaction->receivers,
+            'receivers'   => $receivers,
         ]);
     }
 
