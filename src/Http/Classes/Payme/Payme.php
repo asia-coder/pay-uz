@@ -145,21 +145,30 @@ class Payme extends BaseGateway {
 
         $this->validateParams($this->request->params);
         $model = PaymentService::convertKeyToModel($this->request->params['account'][$this->config['key']]);
+
+        if (!empty($this->config['adaptive_cashbox_relationship'])) {
+            $model->load($this->config['adaptive_cashbox_relationship']);
+        }
+
         //todo alert if model is null
         $transaction = $this->findTransactionByParams($this->request->params);
 
         $receivers = null;
 
-        if (!empty($this->config['receivers'])) {
-            $receivers = array_map(function($item) use ($model) {
-                return [
-                    "id" => $item['cashbox_id'],
-                    "amount" => $item['amount'],
+        if (
+            isset($this->config['adaptive_cashbox_relationship']) &&
+            isset($this->config['adaptive_cashbox_column']) &&
+            !empty($model->{$this->config['adaptive_cashbox_relationship']}->{$this->config['adaptive_cashbox_column']})
+        ) {
+            $receivers = [
+                [
+                    "id" => $model->{$this->config['adaptive_cashbox_relationship']}->{$this->config['adaptive_cashbox_column']},
+                    "amount" => $this->request->amount,
                     "account" => [
                         "{$this->config['key']}" => $model->id,
                     ]
-                ];
-            }, $this->config['receivers']);
+                ]
+            ];
         }
 
         if ($transaction) {
