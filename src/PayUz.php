@@ -74,6 +74,13 @@ class PayUz
         echo view($view, compact('params'));
     }
 
+    public function getParams($model, $amount, $currency_code = Transaction::CURRENCY_CODE_UZS, $url = null): array
+    {
+        $this->validateDriver();
+        $driver = $this->driverClass;
+        return $driver->getRedirectParams($model, $amount, $currency_code, $url);
+    }
+
     /**
      * @return $this
      * @throws \Exception
